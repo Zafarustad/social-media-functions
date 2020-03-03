@@ -28,8 +28,6 @@ exports.PostSpark = (req, res) => {
     return res.status(400).json({ body: "Body must not be empty" });
   }
 
-  console.log(req.body.body);
-
   const newPost = {
     username: req.user.username,
     body: req.body.body,
