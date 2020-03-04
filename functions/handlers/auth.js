@@ -2,10 +2,16 @@ const firebase = require("firebase");
 const moment = require("moment");
 const { admin, db } = require("../util/admin");
 const config = require("../util/config");
-const { validateSignupData, validateLoginData } = require("../util/validators");
+const {
+  validateSignupData,
+  validateLoginData,
+  reduceUserDetails
+} = require("../util/validators");
 
 firebase.initializeApp(config);
 
+
+//user signup
 exports.signup = (req, res) => {
   const newUser = {
     email: req.body.email,
@@ -63,6 +69,8 @@ exports.signup = (req, res) => {
     });
 };
 
+
+//user login
 exports.login = (req, res) => {
   const user = {
     email: req.body.email,
@@ -100,6 +108,52 @@ exports.login = (req, res) => {
     });
 };
 
+
+//add users details
+exports.addUserDetails = (req, res) => {
+  let userDetails = reduceUserDetails(req.body);
+
+  db.doc(`/users/${req.user.username}`)
+    .update(userDetails)
+    .then(() => {
+      return res.json({ message: "Details updated successfully" });
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: `Internal server error: ${err}` });
+    });
+};
+
+
+//fetch user info
+exports.getAuthenticatedUser = (req, res) => {
+  let userData = {};
+  db.doc(`/users/${req.user.username}`)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        userData.credentials = doc.data();
+        return db
+          .collection("likes")
+          .where("username", "==", req.user.username)
+          .get();
+      }
+    })
+    .then(data => {
+      userData.likes = [];
+      data.forEach(doc => {
+        userData.likes.push(doc.data());
+      });
+      return res.json(userData);
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: `Internal server error: ${err}` });
+    });
+};
+
+
+//update user profile pic
 exports.uploadImage = (req, res) => {
   const BusBoy = require("busboy");
   const path = require("path");
@@ -112,7 +166,7 @@ exports.uploadImage = (req, res) => {
   let imgToBeUploaded = {};
 
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
-    if (mimetype !== 'image/jpeg' && mimetype !== 'image/png') {
+    if (mimetype !== "image/jpeg" && mimetype !== "image/png") {
       return res.status(400).json({ error: "Wrong filetype submitted" });
     }
 

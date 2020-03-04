@@ -1,6 +1,8 @@
 const moment = require("moment");
 const { db } = require("../util/admin");
 
+
+//fetch all posts
 exports.getAllPosts = (req, res) => {
   db.collection("sparks")
     .orderBy("createdAt", "desc")
@@ -18,11 +20,13 @@ exports.getAllPosts = (req, res) => {
       return res.json(posts);
     })
     .catch(err => {
+      console.error(err);
       res.status(500).json({ error: "Internal server error" });
-      console.log(err);
     });
 };
 
+
+//add a new post
 exports.PostSpark = (req, res) => {
   if (req.body.body.trim() === "") {
     return res.status(400).json({ body: "Body must not be empty" });

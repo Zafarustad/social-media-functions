@@ -23,7 +23,6 @@ module.exports = (req, res, next) => {
         .get();
     })
     .then(data => {
-      console.log("shshbs", data.docs[0].data().username);
       req.user.username = data.docs[0].data().username;
       return next();
     })
