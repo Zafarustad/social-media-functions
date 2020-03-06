@@ -1,6 +1,12 @@
 const functions = require("firebase-functions");
 const express = require("express");
-const { getAllPosts, PostSpark } = require("./handlers/sparks");
+const {
+  getAllPosts,
+  PostSpark,
+  getSpark,
+  addComment,
+  likeSpark
+} = require("./handlers/sparks");
 const {
   signup,
   login,
@@ -15,6 +21,10 @@ const app = express();
 //Posts route
 app.post("/spark", FBAuth, PostSpark);
 app.get("/sparks", getAllPosts);
+app.get("/spark/:sparkId", getSpark);
+app.post("/spark/:sparkId/comment", FBAuth, addComment);
+// app.post('./spark/:sparkId/like', FBAuth, likeSpark);
+// app.post('./spark/:sparkId/unlike', FBAuth, unlikeSpark);
 
 //Auth routes
 app.post("/signup", signup);

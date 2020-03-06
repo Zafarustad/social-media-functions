@@ -1,6 +1,5 @@
 const moment = require("moment");
-const { db } = require("../util/admin");
-
+const { db, admin } = require("../util/admin");
 
 //fetch all posts
 exports.getAllPosts = (req, res) => {
@@ -25,25 +24,88 @@ exports.getAllPosts = (req, res) => {
     });
 };
 
-
 //add a new post
 exports.PostSpark = (req, res) => {
   if (req.body.body.trim() === "") {
     return res.status(400).json({ body: "Body must not be empty" });
   }
 
-  const newPost = {
+  const newSpark = {
     username: req.user.username,
     body: req.body.body,
-    createdAt: moment().format()
+    createdAt: moment().format(),
+    userImage: req.user.imageUrl,
+    likeCount: 0,
+    comemntCount: 0
   };
 
   db.collection("sparks")
-    .add(newPost)
+    .add(newSpark)
     .then(doc => {
-      return res.json({ message: `spark ${doc.id} posted successfully` });
+      const resSpark = newSpark;
+      resSpark.sparkId = doc.id;
+      return res.json(newSpark);
     })
     .catch(err => {
       return res.status(500).json({ error: "Internal server error" });
+    });
+};
+
+exports.getSpark = (req, res) => {
+  let sparkData = {};
+
+  db.doc(`/sparks/${req.params.sparkId}`)
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Spark not found" });
+      }
+      sparkData = doc.data();
+      sparkData.sparkId = doc.id;
+      return db
+        .collection("comments")
+        .orderBy("createdAt", "desc")
+        .where("sparkId", "==", req.params.sparkId)
+        .get();
+    })
+    .then(data => {
+      sparkData.comments = [];
+      data.forEach(doc => {
+        sparkData.comments.push(doc.data());
+      });
+      return res.json(sparkData);
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: `Internal sever error: ${err}` });
+    });
+};
+
+exports.addComment = (req, res) => {
+  const newComment = {
+    body: req.body.body,
+    createdAt: moment().format(),
+    sparkId: req.params.sparkId,
+    username: req.user.username,
+    userImage: req.user.imageUrl
+  };
+
+  if (req.body.body.trim() === "")
+    return res.status(400).json({ error: "Must not be empty" });
+
+  db.doc(`/spark/${req.params.sparkId}`)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        return res.status(404).json({ error: "Spark not found" });
+      }
+      return db.collection("comments").add(newComment);
+    })
+    .then(() => {
+      res.json(newComment);
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: `Internal server error: ${err}` });
     });
 };
