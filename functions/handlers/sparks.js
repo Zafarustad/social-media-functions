@@ -36,7 +36,7 @@ exports.PostSpark = (req, res) => {
     createdAt: moment().format(),
     userImage: req.user.imageUrl,
     likeCount: 0,
-    comemntCount: 0
+    commentCount: 0
   };
 
   db.collection("sparks")
@@ -51,6 +51,7 @@ exports.PostSpark = (req, res) => {
     });
 };
 
+//fetch spark data
 exports.getSpark = (req, res) => {
   let sparkData = {};
 
@@ -81,6 +82,7 @@ exports.getSpark = (req, res) => {
     });
 };
 
+//add comment to a spark
 exports.addComment = (req, res) => {
   const newComment = {
     body: req.body.body,
@@ -93,12 +95,17 @@ exports.addComment = (req, res) => {
   if (req.body.body.trim() === "")
     return res.status(400).json({ error: "Must not be empty" });
 
-  db.doc(`/spark/${req.params.sparkId}`)
+  db.doc(`/sparks/${req.params.sparkId}`)
     .get()
     .then(doc => {
-      if (doc.exists) {
+      console.log("byshd", doc.exists);
+
+      if (!doc.exists) {
         return res.status(404).json({ error: "Spark not found" });
       }
+      return doc.ref.update({ commentCount: doc.data().commentCount + 1 });
+    })
+    .then(() => {
       return db.collection("comments").add(newComment);
     })
     .then(() => {
@@ -110,6 +117,7 @@ exports.addComment = (req, res) => {
     });
 };
 
+//like a spark
 exports.likeSpark = (req, res) => {
   const likeDocument = db
     .collection("likes")
@@ -156,6 +164,7 @@ exports.likeSpark = (req, res) => {
     });
 };
 
+//unlike a spark
 exports.unlikeSpark = (req, res) => {
   const likeDocument = db
     .collection("likes")
@@ -191,6 +200,29 @@ exports.unlikeSpark = (req, res) => {
             res.json(sparkData);
           });
       }
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: `Internal server error: ${err}` });
+    });
+};
+
+exports.deleteSpark = (req, res) => {
+  const document = db.doc(`sparks/${req.params.sparkId}`);
+
+  document
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Spark not found" });
+      }
+      if (doc.data().username !== req.user.username) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      return document.delete();
+    })
+    .then(() => {
+      return res.json({ message: "Spark deleted successfully" });
     })
     .catch(err => {
       console.error(err);

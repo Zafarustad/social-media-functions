@@ -11,7 +11,6 @@ const isEmpty = value => {
   return false;
 };
 
-
 //validate before signup
 exports.validateSignupData = data => {
   let errors = {};
@@ -37,7 +36,6 @@ exports.validateSignupData = data => {
   };
 };
 
-
 //validate before login
 exports.validateLoginData = data => {
   let errors = {};
@@ -54,7 +52,6 @@ exports.validateLoginData = data => {
     valid: Object.keys(errors).length === 0 ? true : false
   };
 };
-
 
 //add user details
 exports.reduceUserDetails = data => {

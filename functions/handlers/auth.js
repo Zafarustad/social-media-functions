@@ -10,7 +10,6 @@ const {
 
 firebase.initializeApp(config);
 
-
 //user signup
 exports.signup = (req, res) => {
   const newUser = {
@@ -69,7 +68,6 @@ exports.signup = (req, res) => {
     });
 };
 
-
 //user login
 exports.login = (req, res) => {
   const user = {
@@ -108,7 +106,6 @@ exports.login = (req, res) => {
     });
 };
 
-
 //add users details
 exports.addUserDetails = (req, res) => {
   let userDetails = reduceUserDetails(req.body);
@@ -123,7 +120,6 @@ exports.addUserDetails = (req, res) => {
       return res.status(500).json({ error: `Internal server error: ${err}` });
     });
 };
-
 
 //fetch user info
 exports.getAuthenticatedUser = (req, res) => {
@@ -151,7 +147,6 @@ exports.getAuthenticatedUser = (req, res) => {
       return res.status(500).json({ error: `Internal server error: ${err}` });
     });
 };
-
 
 //update user profile pic
 exports.uploadImage = (req, res) => {
