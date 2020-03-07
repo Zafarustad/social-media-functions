@@ -5,7 +5,8 @@ const {
   PostSpark,
   getSpark,
   addComment,
-  likeSpark
+  likeSpark,
+  unlikeSpark
 } = require("./handlers/sparks");
 const {
   signup,
@@ -23,8 +24,8 @@ app.post("/spark", FBAuth, PostSpark);
 app.get("/sparks", getAllPosts);
 app.get("/spark/:sparkId", getSpark);
 app.post("/spark/:sparkId/comment", FBAuth, addComment);
-// app.post('./spark/:sparkId/like', FBAuth, likeSpark);
-// app.post('./spark/:sparkId/unlike', FBAuth, unlikeSpark);
+app.get('/spark/:sparkId/like', FBAuth, likeSpark);
+app.get('/spark/:sparkId/unlike', FBAuth, unlikeSpark);
 
 //Auth routes
 app.post("/signup", signup);
