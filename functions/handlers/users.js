@@ -1,3 +1,4 @@
+/* eslint-disable */
 const firebase = require("firebase");
 const moment = require("moment");
 const { admin, db } = require("../util/admin");
@@ -122,7 +123,7 @@ exports.addUserDetails = (req, res) => {
 };
 
 //fetch user info
-exports.getAuthenticatedUser = (req, res) => {
+exports.getAuthenticatedUserDetail = (req, res) => {
   let userData = {};
   db.doc(`/users/${req.user.username}`)
     .get()
@@ -139,6 +140,63 @@ exports.getAuthenticatedUser = (req, res) => {
       userData.likes = [];
       data.forEach(doc => {
         userData.likes.push(doc.data());
+      });
+      return db
+        .collection("notifications")
+        .where("recipient", "==", req.user.username)
+        .orderBy("createdAt", "desc")
+        .limit(10)
+        .get();
+    })
+    .then(data => {
+      userData.notifications = [];
+      data.forEach(doc => {
+        userData.notifications.push({
+          recipient: doc.data().recipient,
+          sender: doc.data().sender,
+          createdAt: doc.data().createdAt,
+          sparkId: doc.data().sparkId,
+          type: doc.data().type,
+          read: doc.data().read,
+          notificationsId: doc.id
+        });
+      });
+      return res.json(userData);
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: `Internal server error: ${err}` });
+    });
+};
+
+//get any user details
+exports.getUserDetails = (req, res) => {
+  let userData = {};
+  db.doc(`users/${req.params.username}`)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        userData.user = doc.data();
+        return db
+          .collection("sparks")
+          .where("username", "==", req.params.username)
+          .orderBy("createdAt", "desc")
+          .get();
+      }
+      return res.status(404).json({ error: "User not found" });
+    })
+    .then(data => {
+      userData.sparks = [];
+      data.forEach(doc => {
+        userData.sparks.push({
+          body: doc.data().body,
+          createdAt: doc.data().createdAt,
+          username: doc.data().username,
+          userImage: doc.data().userImage,
+          likeCount: doc.data().likeCount,
+          commentCount: doc.data().commentCount,
+          sparkId: doc.id
+        });
       });
       return res.json(userData);
     })

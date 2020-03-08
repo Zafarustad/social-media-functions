@@ -1,3 +1,4 @@
+/* eslint-disable */
 const moment = require("moment");
 const { db, admin } = require("../util/admin");
 
@@ -47,7 +48,7 @@ exports.PostSpark = (req, res) => {
       return res.json(newSpark);
     })
     .catch(err => {
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(500).json({ error: `Internal server error: ${err}` });
     });
 };
 
@@ -98,8 +99,7 @@ exports.addComment = (req, res) => {
   db.doc(`/sparks/${req.params.sparkId}`)
     .get()
     .then(doc => {
-      console.log("byshd", doc.exists);
-
+      
       if (!doc.exists) {
         return res.status(404).json({ error: "Spark not found" });
       }
@@ -109,7 +109,7 @@ exports.addComment = (req, res) => {
       return db.collection("comments").add(newComment);
     })
     .then(() => {
-      res.json(newComment);
+     return res.json(newComment);
     })
     .catch(err => {
       console.error(err);
@@ -197,7 +197,10 @@ exports.unlikeSpark = (req, res) => {
             return SparkDocument.update({ likeCount: sparkData.likeCount });
           })
           .then(() => {
-            res.json(sparkData);
+            return res.json(sparkData);
+          })
+          .catch(() => {
+            //no error handling
           });
       }
     })
