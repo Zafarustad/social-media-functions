@@ -14,7 +14,10 @@ exports.getAllPosts = (req, res) => {
           sparkId: doc.id,
           username: doc.data().username,
           body: doc.data().body,
-          createdAt: doc.data().createdAt
+          createdAt: doc.data().createdAt,
+          commentCount: doc.data().commentCount,
+          likeCount: doc.data().likeCount,
+          userImage: doc.data().userImage
         });
       });
       return res.json(posts);
@@ -94,7 +97,7 @@ exports.addComment = (req, res) => {
   };
 
   if (req.body.body.trim() === "")
-    return res.status(400).json({ error: "Must not be empty" });
+    return res.status(400).json({ comment: "Must not be empty" });
 
   db.doc(`/sparks/${req.params.sparkId}`)
     .get()

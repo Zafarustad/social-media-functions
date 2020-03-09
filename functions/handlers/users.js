@@ -65,7 +65,7 @@ exports.signup = (req, res) => {
       if (err.code === "auth/email-already-in-use") {
         return res.status(400).json({ email: "Email already in use" });
       }
-      return res.status(500).json({ message: `Internal server error: ${err}` });
+      return res.status(500).json({ general: `Something went wrong, please try again` });
     });
 };
 
@@ -205,6 +205,22 @@ exports.getUserDetails = (req, res) => {
       return res.status(500).json({ error: `Internal server error: ${err}` });
     });
 };
+
+exports.markNotificationsRead = (req, res) => {
+  let batch = db.batch();
+  req.body.forEach(notificationId => {
+    const notification = db.doc(`/notifications/${notificationId}`);
+    batch.update(notification, { read: true });
+  })
+  batch.commit()
+  .then(() => {
+    return res.json({ message: 'Notification marked read' });
+  })
+  .catch(err => {
+    console.error(err);
+    return res.status(500).json({error: `Internal server error: ${err}`})
+  })
+}
 
 //update user profile pic
 exports.uploadImage = (req, res) => {

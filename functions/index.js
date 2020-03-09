@@ -17,6 +17,7 @@ const {
   addUserDetails,
   getAuthenticatedUserDetail,
   getUserDetails,
+  markNotificationsRead
 } = require("./handlers/users");
 const moment = require("moment");
 const FBAuth = require("./util/FBAuth");
@@ -39,18 +40,19 @@ app.post("/login", login);
 app.post("/user/image", FBAuth, uploadImage);
 app.post("/user", FBAuth, addUserDetails);
 app.get("/user", FBAuth, getAuthenticatedUserDetail);
-app.get('/user/:username', getUserDetails);
-// app.post('/notifications', markNotificationsRead);
+app.get("/user/:username", getUserDetails);
+app.post("/notifications", markNotificationsRead);
 
 exports.api = functions.https.onRequest(app);
 
-exports.createNotificationOnLike = functions.region('us-central1').firestore
-  .document("likes/{id}")
+exports.createNotificationOnLike = functions
+  .region("us-central1")
+  .firestore.document("likes/{id}")
   .onCreate(snapshot => {
     db.doc(`/sparks/${snapshot.data().sparkId}`)
       .get()
       .then(doc => {
-        if (doc.exists) {
+        if (doc.exists && doc.data().username !== snapshot.data().username) {
           return db.doc(`/notifications/${snapshot.id}`).set({
             createdAt: moment().format(),
             recipient: doc.data().username,
@@ -61,37 +63,34 @@ exports.createNotificationOnLike = functions.region('us-central1').firestore
           });
         }
       })
-      .then(() => {
-        return;
-      })
       .catch(err => {
         console.error(err);
-        return;
       });
   });
 
-exports.deleteNotificationOnUnlike = functions.region('us-central1').firestore
-  .document("likes/{id}")
+exports.deleteNotificationOnUnlike = functions
+  .region("us-central1")
+  .firestore.document("likes/{id}")
   .onDelete(snapshot => {
-    db.doc(`/notifications/${snapshot.id}`)
+    return db
+      .doc(`/notifications/${snapshot.id}`)
       .delete()
-      .then(() => {
-        return;
-      })
       .catch(err => {
         console.error(err);
         return;
       });
   });
 
-exports.createNotificationOnComment = functions.region('us-central1').firestore
-  .document("comments/{id}")
+exports.createNotificationOnComment = functions
+  .region("us-central1")
+  .firestore.document("comments/{id}")
   .onCreate(snapshot => {
-    db.doc(`/sparks/${snapshot.data().sparkId}`)
+    return db
+      .doc(`/sparks/${snapshot.data().sparkId}`)
       .get()
       .then(doc => {
-        console.log('dsnjd', doc.exists)
-        if (doc.exists) {
+        console.log("dsnjd", doc.exists);
+        if (doc.exists && doc.data().username !== snapshot.data().username) {
           return db.doc(`/notifications/${snapshot.id}`).set({
             createdAt: moment().format(),
             recipient: doc.data().username,
@@ -102,11 +101,58 @@ exports.createNotificationOnComment = functions.region('us-central1').firestore
           });
         }
       })
-      .then(() => {
-        return;
-      })
       .catch(err => {
         console.error(err);
         return;
       });
   });
+
+exports.onUserImageChange = functions
+  .region("us-central1")
+  .firestore.document("users/{userId}")
+  .onUpdate(change => {
+    console.log(change.before.data());
+    console.log(change.after.data());
+    if (change.before.data().imageUrl !== change.after.data().imageUrl) {
+      console.log("image has changed");
+      let batch = db.batch();
+      return db
+        .collection("sparks")
+        .where("username", "==", change.before.data().username)
+        .get()
+        .then(data => {
+          data.forEach(doc => {
+            const spark = db.doc(`/sparks/${doc.id}`);
+            batch.update(spark, { userImage: change.after.data().imageUrl });
+          });
+          return batch.commit();
+        });
+    } else return true
+  });
+
+  exports.onScreamDelete = functions.region('us-central1').firestore
+  .document('/sparks/{sparkId}')
+  .onDelete((snapshot, context) => {
+    const sparkId = context.params.sparkId;
+    const batch = db.batch();
+    return db.collection('comments').where('sparkId', '==', sparkId).get()
+    .then(data => {
+      data.forEach(doc => {
+        batch.delete(db.doc(`/comments/${doc.id}`))
+      })
+      return db.collection('likes').where('sparkId', '==', sparkId).get();
+    })
+    .then(data => {
+      data.forEach(doc => {
+        batch.delete(db.doc(`/likes/${doc.id}`))
+      })
+      return db.collection('notifications').where('sparkId', '==', sparkId).get();
+    })
+    .then(data => {
+      data.forEach(doc => {
+        batch.delete(db.doc(`/notifications/${doc.id}`))
+      })
+      return batch.commit();
+    })
+    .catch(err => console.error(err))
+  })
