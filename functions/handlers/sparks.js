@@ -28,7 +28,7 @@ exports.getAllPosts = (req, res) => {
     });
 };
 
-//add a new post
+//add a new spark
 exports.PostSpark = (req, res) => {
   if (req.body.body.trim() === "") {
     return res.status(400).json({ body: "Body must not be empty" });
@@ -136,7 +136,7 @@ exports.likeSpark = (req, res) => {
     .then(doc => {
       if (doc.exists) {
         sparkData = doc.data();
-        sparkData.id = doc.id;
+        sparkData.sparkId = doc.id;
         return likeDocument.get();
       } else {
         return res.status(404).json({ error: "Spark not found" });
@@ -155,7 +155,7 @@ exports.likeSpark = (req, res) => {
             return SparkDocument.update({ likeCount: sparkData.likeCount });
           })
           .then(() => {
-            return res.json({ sparkData });
+            return res.json(sparkData);
           });
       } else {
         return res.status(400).json({ error: "Spark already liked" });
@@ -183,7 +183,7 @@ exports.unlikeSpark = (req, res) => {
     .then(doc => {
       if (doc.exists) {
         sparkData = doc.data();
-        sparkData.id = doc.id;
+        sparkData.sparkId = doc.id;
         return likeDocument.get();
       } else {
         return res.status(404).json({ error: "Spark not found" });
@@ -213,6 +213,7 @@ exports.unlikeSpark = (req, res) => {
     });
 };
 
+//Delete spark
 exports.deleteSpark = (req, res) => {
   const document = db.doc(`sparks/${req.params.sparkId}`);
 

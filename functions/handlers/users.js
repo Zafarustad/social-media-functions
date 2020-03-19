@@ -233,6 +233,7 @@ exports.uploadImage = (req, res) => {
 
   let imgFilename;
   let imgToBeUploaded = {};
+  let img;
 
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
     if (mimetype !== "image/jpeg" && mimetype !== "image/png") {
@@ -259,6 +260,8 @@ exports.uploadImage = (req, res) => {
       })
       .then(() => {
         const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imgFilename}?alt=media`;
+        img =  imageUrl
+        console.log('shdvsgvds',img)
         return db.doc(`/users/${req.user.username}`).update({ imageUrl });
       })
       .then(() => {
