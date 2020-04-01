@@ -65,7 +65,9 @@ exports.signup = (req, res) => {
       if (err.code === "auth/email-already-in-use") {
         return res.status(400).json({ email: "Email already in use" });
       }
-      return res.status(500).json({ general: `Something went wrong, please try again` });
+      return res
+        .status(500)
+        .json({ general: `Something went wrong, please try again` });
     });
 };
 
@@ -158,7 +160,7 @@ exports.getAuthenticatedUserDetail = (req, res) => {
           sparkId: doc.data().sparkId,
           type: doc.data().type,
           read: doc.data().read,
-          notificationsId: doc.id
+          notificationId: doc.id
         });
       });
       return res.json(userData);
@@ -211,16 +213,17 @@ exports.markNotificationsRead = (req, res) => {
   req.body.forEach(notificationId => {
     const notification = db.doc(`/notifications/${notificationId}`);
     batch.update(notification, { read: true });
-  })
-  batch.commit()
-  .then(() => {
-    return res.json({ message: 'Notification marked read' });
-  })
-  .catch(err => {
-    console.error(err);
-    return res.status(500).json({error: `Internal server error: ${err}`})
-  })
-}
+  });
+  batch
+    .commit()
+    .then(() => {
+      return res.json({ message: "Notification marked read" });
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: `Internal server error: ${err}` });
+    });
+};
 
 //update user profile pic
 exports.uploadImage = (req, res) => {
@@ -260,8 +263,8 @@ exports.uploadImage = (req, res) => {
       })
       .then(() => {
         const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imgFilename}?alt=media`;
-        img =  imageUrl
-        console.log('shdvsgvds',img)
+        img = imageUrl;
+        console.log("shdvsgvds", img);
         return db.doc(`/users/${req.user.username}`).update({ imageUrl });
       })
       .then(() => {
@@ -273,4 +276,53 @@ exports.uploadImage = (req, res) => {
       });
   });
   busboy.end(req.rawBody);
+};
+
+//Fetch Messages
+exports.fetchMessages = (req, res) => {
+  db.collection("messages")
+    .orderBy("createdAt", "desc")
+    .get()
+    .then(data => {
+      let messages = [];
+      data.forEach(doc => {
+        messages.push({
+          body: doc.data().body,
+          createdAt: doc.data().createdAt,
+          username: doc.data().username,
+          userImage: doc.data().userImage
+        });
+      });
+      return res.json(messages);
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: `Internal server error: ${err}` });
+    });
+};
+
+
+//Send Message
+exports.sendMessage = (req, res) => {
+  if (req.body.body.trim() === "") {
+    return res.status(400).json({ body: "must not be empty" });
+  }
+
+  const newMessage = {
+    username: req.user.username,
+    body: req.body.body,
+    createdAt: moment().format(),
+    userImage: req.user.imageUrl
+  };
+
+  db.collection("messages")
+    .add(newMessage)
+    .then(doc => {
+      const resMssg = newMessage;
+      resMssg.messageId = doc.id;
+      return res.json(newMessage);
+    })
+    .catch(err => {
+      return res.status(500).json({ error: `Internal server error: ${err}` });
+    });
 };
