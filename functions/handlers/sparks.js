@@ -1,15 +1,16 @@
 /* eslint-disable */
-const moment = require("moment");
-const { db, admin } = require("../util/admin");
+const moment = require('moment');
+const { db, admin } = require('../util/admin');
+const { validatePostSpark } = require('../util/validators');
 
 //fetch all posts
 exports.getAllPosts = (req, res) => {
-  db.collection("sparks")
-    .orderBy("createdAt", "desc")
+  db.collection('sparks')
+    .orderBy('createdAt', 'desc')
     .get()
-    .then(data => {
+    .then((data) => {
       let posts = [];
-      data.forEach(doc => {
+      data.forEach((doc) => {
         posts.push({
           sparkId: doc.id,
           username: doc.data().username,
@@ -17,21 +18,21 @@ exports.getAllPosts = (req, res) => {
           createdAt: doc.data().createdAt,
           commentCount: doc.data().commentCount,
           likeCount: doc.data().likeCount,
-          userImage: doc.data().userImage
+          userImage: doc.data().userImage,
         });
       });
       return res.json(posts);
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: 'Internal server error' });
     });
 };
 
 //add a new spark
 exports.PostSpark = (req, res) => {
-  if (req.body.body.trim() === "") {
-    return res.status(400).json({ body: "Must not be empty" });
+  if (req.body.body.trim() === '') {
+    return res.status(400).json({ body: 'Must not be empty' });
   }
 
   const newSpark = {
@@ -40,17 +41,22 @@ exports.PostSpark = (req, res) => {
     createdAt: moment().format(),
     userImage: req.user.imageUrl,
     likeCount: 0,
-    commentCount: 0
+    commentCount: 0,
   };
 
-  db.collection("sparks")
+  const { errors, valid } = validatePostSpark(newSpark.body);
+  if (!valid) {
+    return res.status(400).json(errors);
+  }
+
+  db.collection('sparks')
     .add(newSpark)
-    .then(doc => {
+    .then((doc) => {
       const resSpark = newSpark;
       resSpark.sparkId = doc.id;
       return res.json(newSpark);
     })
-    .catch(err => {
+    .catch((err) => {
       return res.status(500).json({ error: `Internal server error: ${err}` });
     });
 };
@@ -61,26 +67,26 @@ exports.getSpark = (req, res) => {
 
   db.doc(`/sparks/${req.params.sparkId}`)
     .get()
-    .then(doc => {
+    .then((doc) => {
       if (!doc.exists) {
-        return res.status(404).json({ error: "Spark not found" });
+        return res.status(404).json({ error: 'Spark not found' });
       }
       sparkData = doc.data();
       sparkData.sparkId = doc.id;
       return db
-        .collection("comments")
-        .orderBy("createdAt", "desc")
-        .where("sparkId", "==", req.params.sparkId)
+        .collection('comments')
+        .orderBy('createdAt', 'desc')
+        .where('sparkId', '==', req.params.sparkId)
         .get();
     })
-    .then(data => {
+    .then((data) => {
       sparkData.comments = [];
-      data.forEach(doc => {
+      data.forEach((doc) => {
         sparkData.comments.push(doc.data());
       });
       return res.json(sparkData);
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
       return res.status(500).json({ error: `Internal sever error: ${err}` });
     });
@@ -93,28 +99,27 @@ exports.addComment = (req, res) => {
     createdAt: moment().format(),
     sparkId: req.params.sparkId,
     username: req.user.username,
-    userImage: req.user.imageUrl
+    userImage: req.user.imageUrl,
   };
 
-  if (req.body.body.trim() === "")
-    return res.status(400).json({ comment: "Must not be empty" });
+  if (req.body.body.trim() === '')
+    return res.status(400).json({ comment: 'Must not be empty' });
 
   db.doc(`/sparks/${req.params.sparkId}`)
     .get()
-    .then(doc => {
-      
+    .then((doc) => {
       if (!doc.exists) {
-        return res.status(404).json({ error: "Spark not found" });
+        return res.status(404).json({ error: 'Spark not found' });
       }
       return doc.ref.update({ commentCount: doc.data().commentCount + 1 });
     })
     .then(() => {
-      return db.collection("comments").add(newComment);
+      return db.collection('comments').add(newComment);
     })
     .then(() => {
-     return res.json(newComment);
+      return res.json(newComment);
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
       res.status(500).json({ error: `Internal server error: ${err}` });
     });
@@ -123,9 +128,9 @@ exports.addComment = (req, res) => {
 //like a spark
 exports.likeSpark = (req, res) => {
   const likeDocument = db
-    .collection("likes")
-    .where("username", "==", req.user.username)
-    .where("sparkId", "==", req.params.sparkId)
+    .collection('likes')
+    .where('username', '==', req.user.username)
+    .where('sparkId', '==', req.params.sparkId)
     .limit(1);
 
   const SparkDocument = db.doc(`/sparks/${req.params.sparkId}`);
@@ -133,22 +138,22 @@ exports.likeSpark = (req, res) => {
   let sparkData = {};
 
   SparkDocument.get()
-    .then(doc => {
+    .then((doc) => {
       if (doc.exists) {
         sparkData = doc.data();
         sparkData.sparkId = doc.id;
         return likeDocument.get();
       } else {
-        return res.status(404).json({ error: "Spark not found" });
+        return res.status(404).json({ error: 'Spark not found' });
       }
     })
-    .then(data => {
+    .then((data) => {
       if (data.empty) {
         return db
-          .collection("likes")
+          .collection('likes')
           .add({
             sparkId: req.params.sparkId,
-            username: req.user.username
+            username: req.user.username,
           })
           .then(() => {
             sparkData.likeCount++;
@@ -158,10 +163,10 @@ exports.likeSpark = (req, res) => {
             return res.json(sparkData);
           });
       } else {
-        return res.status(400).json({ error: "Spark already liked" });
+        return res.status(400).json({ error: 'Spark already liked' });
       }
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
       res.status(500).json({ error: `Internal server error: ${err}` });
     });
@@ -170,9 +175,9 @@ exports.likeSpark = (req, res) => {
 //unlike a spark
 exports.unlikeSpark = (req, res) => {
   const likeDocument = db
-    .collection("likes")
-    .where("username", "==", req.user.username)
-    .where("sparkId", "==", req.params.sparkId)
+    .collection('likes')
+    .where('username', '==', req.user.username)
+    .where('sparkId', '==', req.params.sparkId)
     .limit(1);
 
   const SparkDocument = db.doc(`/sparks/${req.params.sparkId}`);
@@ -180,18 +185,18 @@ exports.unlikeSpark = (req, res) => {
   let sparkData = {};
 
   SparkDocument.get()
-    .then(doc => {
+    .then((doc) => {
       if (doc.exists) {
         sparkData = doc.data();
         sparkData.sparkId = doc.id;
         return likeDocument.get();
       } else {
-        return res.status(404).json({ error: "Spark not found" });
+        return res.status(404).json({ error: 'Spark not found' });
       }
     })
-    .then(data => {
+    .then((data) => {
       if (data.empty) {
-        return res.status(400).json({ error: "Spark not liked" });
+        return res.status(400).json({ error: 'Spark not liked' });
       } else {
         db.doc(`/likes/${data.docs[0].id}`)
           .delete()
@@ -207,7 +212,7 @@ exports.unlikeSpark = (req, res) => {
           });
       }
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
       res.status(500).json({ error: `Internal server error: ${err}` });
     });
@@ -219,19 +224,19 @@ exports.deleteSpark = (req, res) => {
 
   document
     .get()
-    .then(doc => {
+    .then((doc) => {
       if (!doc.exists) {
-        return res.status(404).json({ error: "Spark not found" });
+        return res.status(404).json({ error: 'Spark not found' });
       }
       if (doc.data().username !== req.user.username) {
-        return res.status(403).json({ error: "Unauthorized" });
+        return res.status(403).json({ error: 'Unauthorized' });
       }
       return document.delete();
     })
     .then(() => {
-      return res.json({ message: "Spark deleted successfully" });
+      return res.json({ message: 'Spark deleted successfully' });
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
       res.status(500).json({ error: `Internal server error: ${err}` });
     });
