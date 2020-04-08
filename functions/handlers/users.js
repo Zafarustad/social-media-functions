@@ -54,8 +54,8 @@ exports.signup = (req, res) => {
         createdAt: moment().format(),
         imageUrl: `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noAvatar}?alt=media`,
         userId: userId,
-        followers: 0,
-        following: 0,
+        followers: [],
+        following: [],
       };
       return db.doc(`users/${newUser.username}`).set(userCredentials);
     })
@@ -312,6 +312,7 @@ exports.followUser = (req, res) => {
         recipientUserData.followers.push({
           username: userData.username,
           userId: userData.userId,
+          userImage: userData.imageUrl
         });
         recipientUserDocument.update({
           followers: recipientUserData.followers,
@@ -320,6 +321,7 @@ exports.followUser = (req, res) => {
         userData.following.push({
           username: recipientUserData.username,
           userId: recipientUserData.userId,
+          userImage: recipientUserData.imageUrl
         });
         userDocument.update({ following: userData.following });
 
