@@ -241,3 +241,49 @@ exports.deleteSpark = (req, res) => {
       res.status(500).json({ error: `Internal server error: ${err}` });
     });
 };
+
+exports.getfollowingSparks = (req, res) => {
+  const userDocument = db.doc(`/users/${req.user.username}`);
+
+  let userData = {};
+  let followingUsers = [];
+
+  userDocument
+    .get()
+    .then((doc) => {
+      if (doc.exists) {
+        userData = doc.data();
+        userData.following.forEach((user) => {
+          followingUsers.push(user.username);
+        });
+        return db.collection('sparks').get();
+      } else {
+        return res.status(404).json({ error: 'user not found' });
+      }
+    })
+    .then((data) => {
+      let sparks = [];
+      data.forEach((doc) => {
+        sparks.push({
+          sparkId: doc.id,
+          username: doc.data().username,
+          body: doc.data().body,
+          createdAt: doc.data().createdAt,
+          commentCount: doc.data().commentCount,
+          likeCount: doc.data().likeCount,
+          userImage: doc.data().userImage,
+        });
+      });
+      let filteredSparks = [];
+      let result = [];
+      for (let i = 0; i < followingUsers.length; i++) {
+        result = sparks.filter((spark) => spark.username === followingUsers[i]);
+        filteredSparks.push(...result);
+      }
+      return res.json(filteredSparks);
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: `Internal sever error: ${err}` });
+    });
+};
