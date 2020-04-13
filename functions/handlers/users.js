@@ -312,7 +312,7 @@ exports.followUser = (req, res) => {
         recipientUserData.followers.push({
           username: userData.username,
           userId: userData.userId,
-          userImage: userData.imageUrl
+          userImage: userData.imageUrl,
         });
         recipientUserDocument.update({
           followers: recipientUserData.followers,
@@ -321,9 +321,22 @@ exports.followUser = (req, res) => {
         userData.following.push({
           username: recipientUserData.username,
           userId: recipientUserData.userId,
-          userImage: recipientUserData.imageUrl
+          userImage: recipientUserData.imageUrl,
         });
         userDocument.update({ following: userData.following });
+
+        const notificationDoc = {
+          createdAt: moment().format(),
+          recipient: recipientUserData.username,
+          sender: userData.username,
+          type: 'follow',
+          read: false,
+          userId: recipientUserData.userId,
+        };
+
+        db.doc(`/notifications/${recipientUserData.userId}`).set(
+          notificationDoc
+        );
 
         return res.json(recipientUserData);
       }
@@ -366,6 +379,16 @@ exports.unfollowUser = (req, res) => {
       );
       userData.following.splice(recipientIndex, 1);
       userDocument.update({ following: userData.following });
+
+      const notificationDoc = db.doc(
+        `/notifications/${recipientUserData.userId}`
+      );
+
+      notificationDoc.get().then((doc) => {
+        if (doc.exists) {
+          notificationDoc.delete();
+        }
+      });
 
       return res.json(recipientUserData);
     })
