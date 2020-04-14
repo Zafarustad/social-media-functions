@@ -242,6 +242,7 @@ exports.deleteSpark = (req, res) => {
     });
 };
 
+//get sparks of following users
 exports.getfollowingSparks = (req, res) => {
   const userDocument = db.doc(`/users/${req.user.username}`);
 

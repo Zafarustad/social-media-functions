@@ -24,6 +24,7 @@ const {
   sendMessage,
   followUser,
   unfollowUser,
+  getAllUsers
 } = require('./handlers/users');
 const moment = require('moment');
 const FBAuth = require('./util/FBAuth');
@@ -54,6 +55,7 @@ app.get('/user/:username/follow', FBAuth, followUser);
 app.get('/user/:username/unfollow', FBAuth, unfollowUser);
 app.get('/messages', fetchMessages);
 app.post('/message', FBAuth, sendMessage);
+app.get('/users', getAllUsers)
 
 exports.api = functions.https.onRequest(app);
 

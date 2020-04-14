@@ -173,6 +173,27 @@ exports.getAuthenticatedUserDetail = (req, res) => {
     });
 };
 
+//get all users
+exports.getAllUsers = (req, res) => {
+  db.collection('users')
+    .get()
+    .then((data) => {
+      let users = [];
+      data.forEach((doc) => {
+        users.push({
+          username: doc.data().username,
+          userId: doc.data().userId,
+          userImage: doc.data().imageUrl,
+        });
+      });
+      return res.json(users);
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: `Inetrnal server error: ${err}` });
+    });
+};
+
 //get any user details
 exports.getUserDetails = (req, res) => {
   let userData = {};
