@@ -10,7 +10,7 @@ const {
   likeSpark,
   unlikeSpark,
   deleteSpark,
-  getfollowingSparks
+  getfollowingSparks,
 } = require('./handlers/sparks');
 const {
   signup,
@@ -24,14 +24,15 @@ const {
   sendMessage,
   followUser,
   unfollowUser,
-  getAllUsers
+  getAllUsers,
+  deleteMessage
 } = require('./handlers/users');
 const moment = require('moment');
 const FBAuth = require('./util/FBAuth');
 const { db } = require('./util/admin');
 
 const app = express();
-app.use(cors());
+app.use(cors({origin: true}));
 
 //Spark routes
 app.post('/spark', FBAuth, PostSpark);
@@ -41,7 +42,7 @@ app.post('/spark/:sparkId/comment', FBAuth, addComment);
 app.get('/spark/:sparkId/like', FBAuth, likeSpark);
 app.get('/spark/:sparkId/unlike', FBAuth, unlikeSpark);
 app.delete('/spark/:sparkId/delete', FBAuth, deleteSpark);
-app.get('/following/sparks', FBAuth, getfollowingSparks)
+app.get('/following/sparks', FBAuth, getfollowingSparks);
 
 //User routes
 app.post('/signup', signup);
@@ -55,7 +56,8 @@ app.get('/user/:username/follow', FBAuth, followUser);
 app.get('/user/:username/unfollow', FBAuth, unfollowUser);
 app.get('/messages', fetchMessages);
 app.post('/message', FBAuth, sendMessage);
-app.get('/users', getAllUsers)
+app.delete('/message/:messageId/delete', FBAuth, deleteMessage);
+app.get('/users', getAllUsers);
 
 exports.api = functions.https.onRequest(app);
 

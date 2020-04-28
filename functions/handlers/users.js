@@ -128,6 +128,8 @@ exports.addUserDetails = (req, res) => {
 
 //fetch user info
 exports.getAuthenticatedUserDetail = (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST,');
   let userData = {};
   db.doc(`/users/${req.user.username}`)
     .get()
@@ -422,12 +424,13 @@ exports.unfollowUser = (req, res) => {
 //Fetch Messages
 exports.fetchMessages = (req, res) => {
   db.collection('messages')
-    .orderBy('createdAt', 'desc')
+    .orderBy('createdAt', 'asc')
     .get()
     .then((data) => {
       let messages = [];
       data.forEach((doc) => {
         messages.push({
+          messageId: doc.id,
           body: doc.data().body,
           createdAt: doc.data().createdAt,
           username: doc.data().username,
@@ -444,6 +447,9 @@ exports.fetchMessages = (req, res) => {
 
 //Send Message
 exports.sendMessage = (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE');
+
   if (req.body.body.trim() === '') {
     return res.status(400).json({ body: 'must not be empty' });
   }
@@ -464,5 +470,28 @@ exports.sendMessage = (req, res) => {
     })
     .catch((err) => {
       return res.status(500).json({ error: `Internal server error: ${err}` });
+    });
+};
+
+exports.deleteMessage = (req, res) => {
+  const document = db.doc(`messages/${req.params.messageId}`);
+
+  document
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: 'Chat not found' });
+      }
+      if (doc.data().username !== req.user.username) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      return document.delete();
+    })
+    .then(() => {
+      return res.json({ message: 'Message deleted successfully' });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ err: `Internal server error: ${err}` });
     });
 };
