@@ -128,8 +128,6 @@ exports.addUserDetails = (req, res) => {
 
 //fetch user info
 exports.getAuthenticatedUserDetail = (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST,');
   let userData = {};
   db.doc(`/users/${req.user.username}`)
     .get()
@@ -180,6 +178,11 @@ exports.getAllUsers = (req, res) => {
   db.collection('users')
     .get()
     .then((data) => {
+      // const imgStr = 'https://firebasestorage.googleapis.com/v0/b/social-media-8d6da.appspot.com/o/386314.jpg?alt=media'
+      // const firstSplit = imgStr.split('/')
+      // const secondSplit = firstSplit[firstSplit.length-1]
+      // const imgFile = secondSplit.split('?')[0]
+      // console.log('iiiiiii', imgFile);
       let users = [];
       data.forEach((doc) => {
         users.push({
@@ -447,9 +450,6 @@ exports.fetchMessages = (req, res) => {
 
 //Send Message
 exports.sendMessage = (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE');
-
   if (req.body.body.trim() === '') {
     return res.status(400).json({ body: 'must not be empty' });
   }

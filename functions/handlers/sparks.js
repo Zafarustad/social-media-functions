@@ -8,7 +8,7 @@ exports.getAllPosts = (req, res) => {
   db.collection('sparks')
     .orderBy('createdAt', 'desc')
     .get()
-    .then((data) => {
+    .then((data) => { 
       let posts = [];
       data.forEach((doc) => {
         posts.push({

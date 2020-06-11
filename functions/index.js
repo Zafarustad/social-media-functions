@@ -25,14 +25,14 @@ const {
   followUser,
   unfollowUser,
   getAllUsers,
-  deleteMessage
+  deleteMessage,
 } = require('./handlers/users');
 const moment = require('moment');
 const FBAuth = require('./util/FBAuth');
-const { db } = require('./util/admin');
+const { db, admin } = require('./util/admin');
 
 const app = express();
-app.use(cors({origin: true}));
+// const main = express();
 
 //Spark routes
 app.post('/spark', FBAuth, PostSpark);
@@ -58,6 +58,11 @@ app.get('/messages', fetchMessages);
 app.post('/message', FBAuth, sendMessage);
 app.delete('/message/:messageId/delete', FBAuth, deleteMessage);
 app.get('/users', getAllUsers);
+
+//Handling CORS
+// app.use(cors({origin: true}));
+// main.use(cors({origin: true}));
+// main.use(app);
 
 exports.api = functions.https.onRequest(app);
 
@@ -136,6 +141,14 @@ exports.onUserImageChange = functions
           data.forEach((doc) => {
             const spark = db.doc(`/sparks/${doc.id}`);
             batch.update(spark, { userImage: change.after.data().imageUrl });
+            console.log('check', change.before.data().imageUrl);
+
+            const delImgStr = change.before.data().imageUrl;
+            const firstSplit = delImgStr.split('/');
+            const secondSplit = firstSplit[firstSplit.length - 1];
+            const delImgFile = secondSplit.split('?')[0];
+            console.log(delImgFile);
+            admin.storage().bucket().file(delImgFile).delete();
           });
           return batch.commit();
         });
